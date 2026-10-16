@@ -1,0 +1,235 @@
+# 📊 SysPulse: Linux Infrastructure & Network Telemetry Suite
+
+SysPulse is a production-grade infrastructure and network telemetry engine engineered in FastAPI and Python. Designed for Linux systems engineering and DevOps operations, it captures granular host metrics (CPU cores, memory paging, disk I/O throughput, active TCP/UDP sockets, and network packet rates) with low overhead, featuring an interactive operational dashboard, automated systemd service lifecycle control, and real-time incident alerting.
+
+![Dashboard Preview](https://raw.githubusercontent.com/isitanand/syspulse-infrastructure-monitor/main/static/preview.png)
+
+## ✨ Features
+
+- **Live System Metrics**: Real-time tracking of CPU, RAM, Disk, and Network I/O with smooth animations and theme-adaptive coloring.
+- **Per-Core Visualization**: Detailed per-core CPU usage cylinders.
+- **Web SSH Terminal**: Fully functional terminal in your browser powered by xterm.js and asyncssh.
+- **Multi-Dimensional Benchmark**: High-intensity, sequential real-world benchmark simulating JSON serialization/deserialization, SHA-256 cryptographic hashing, memory slice copying (RAM GB/s), and direct-sync disk write/read throughput (Disk MB/s) with custom ratings and an overall performance score. Handles 1-core systems gracefully by adapting multi-core tests to a single-core sustained stress test.
+- **Persistent History**: Stores historical metrics in an optimized SQLite database with theme-tailored solid popover time ranges.
+- **Detached Dual Update & Reinstall**: Elegant Orange (Update via GitHub) and Blue (Reinstall locally) pill buttons running inside detached systemd transient scopes (`systemd-run`) surviving panel service stops and auto-reconnecting.
+- **GitHub Release Tracking**: Automatically queries public GitHub Releases in the browser and displays a gorgeous pulsing amber notification badge (`New: v1.0.1`) next to the Update button when a newer version is published.
+- **Service Traffic Analyzer**: Deep Packet Inspection and DNS interception (via `iptables`, `ipset`, and `dnsmasq`) to track exact bandwidth usage of specific services like Google, Meta, Spotify, Telegram, Apple, etc.
+- **X-UI V2Ray Integration**: Dynamically reads X-UI SQLite databases to show real-time user metrics, total limits, and unique active IPs without crashing the panel. Supports multiple X-UI forks (Sanaei, Alireza, 3x-ui).
+- **Universal OS Compatibility**: Intelligent installer automatically detects the OS (Ubuntu, Debian, CentOS, RHEL, AlmaLinux) and installs appropriate dependencies.
+- **🌐 Virtual Browser**: Secure, Docker-based Chromium browser accessible directly from the dashboard.
+- **Telegram Alerts & Interactive Bot**: Configure thresholds to receive warning notifications, get scheduled routine system health logs, and check the live status at any time using `/status` or the persistent **📊 Check Status** bot keyboard. Includes 3-hour dual-axis performance charts (CPU, RAM, Load Average) sent directly as photo reports.
+- **Beautiful UI**: Modern glassmorphic aesthetic with support for multiple premium themes (Dark, Light, Gruvbox, Nord, Cyberpunk, etc.).
+
+## 🚀 Quick Installation
+
+To install and start the dashboard on a fresh Linux server (Debian, Ubuntu, RHEL, Fedora, CentOS, etc.), simply run:
+
+```bash
+curl -sL https://raw.githubusercontent.com/isitanand/syspulse-infrastructure-monitor/main/install.sh | sudo bash
+```
+
+## 🐳 Docker Installation (Recommended for Containerized Environments)
+
+If you prefer to run SysPulse in a fully isolated container while maintaining accurate host-level metric tracking (network interfaces, disk throughput, real-time memory usage, and processes), you can deploy it using Docker.
+
+---
+
+### Option A: One-Click Installer (Recommended - Easiest)
+If you have a fresh server with absolutely nothing installed, this interactive script installs Docker automatically, sets up the database file, configures your port/credentials, and starts the panel in a single step:
+
+```bash
+curl -sL https://raw.githubusercontent.com/isitanand/syspulse-infrastructure-monitor/main/docker_install.sh | sudo bash
+```
+
+---
+
+### Option B: Step-by-Step Docker Compose Setup
+If you want to manually set up and run Server Monitor using Docker Compose, follow these 3 simple steps.
+
+#### Step 1: Create application directory and database file
+Run these commands to prepare the required paths on your host server:
+```bash
+mkdir -p /opt/syspulse-monitor
+touch /opt/syspulse-monitor/metrics.db
+```
+
+#### Step 2: Create the config file
+To prevent any text formatting or spacing errors (YAML is extremely sensitive to spaces), copy and paste this **entire block** directly into your terminal. It will write the `docker-compose.yml` file perfectly without needing any editors like `nano` or `vim`:
+
+```bash
+cat << 'EOF' > /opt/syspulse-monitor/docker-compose.yml
+version: '3.8'
+
+services:
+  syspulse-monitor:
+    image: isitanand/syspulse-infrastructure-monitor:latest
+    container_name: syspulse-monitor
+    restart: always
+    network_mode: host
+    pid: host
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    environment:
+      - PORT=8080                  # Change this if port 8080 is in use
+      - PANEL_USERNAME=admin       # Your login username
+      - PANEL_PASSWORD=admin       # Your login password
+      - PROCFS_PATH=/host/proc
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /opt/syspulse-monitor/metrics.db:/app/metrics.db
+      - /etc/x-ui:/etc/x-ui:ro
+      - /usr/local/x-ui:/usr/local/x-ui:ro
+      - /var/log:/var/log:ro
+EOF
+```
+
+#### Step 3: Run the panel
+Run this command to download and start the application:
+```bash
+cd /opt/syspulse-monitor
+docker compose up -d || docker-compose up -d
+```
+
+---
+
+### ⚙️ Modifying Port or Credentials Later
+If you ever want to change your port or login credentials:
+
+1. Open the file to edit:
+   ```bash
+   nano /opt/syspulse-monitor/docker-compose.yml
+   ```
+2. Edit the variables inside the `environment:` section (e.g. change port to `8085`, username to `myuser`, password to `mypassword`).
+3. Save the file (`Ctrl+O`, `Enter`, `Ctrl+X`) and run:
+   ```bash
+    cd /opt/syspulse-monitor
+    docker compose up -d || docker-compose up -d
+    ```
+
+### 🔄 Updating Docker Installation
+To update your Docker container to the absolute latest version:
+```bash
+cd /opt/syspulse-monitor
+docker compose pull || docker-compose pull
+docker compose up -d --remove-orphans || docker-compose up -d --remove-orphans
+```
+
+### Accessing the Panel
+Open your browser and navigate to `http://your-server-ip:8080` (or whichever port you configured). Log in using your username and password.
+
+### 💾 Database Persistence & Backups
+Server Monitor uses a lightweight SQLite database (`metrics.db`) to record historical charts. By default under Docker, this file is persisted on your host machine to ensure safety during container updates or restarts.
+
+* **Database File Location on Host:** `/opt/syspulse-monitor/metrics.db`
+* **Container Rebuild Safety:** You can safely upgrade, stop, or delete your Docker container. Your historical metrics and dashboard statistics are safe and will be automatically reloaded when a new container starts.
+* **Creating a Backup:** Since the database is a standard SQLite file, backing it up is as simple as copying it:
+  ```bash
+  cp /opt/syspulse-monitor/metrics.db /opt/syspulse-monitor/metrics_backup.db
+  ```
+### 🔒 Securing with SSL (HTTPS)
+To access your Docker-based dashboard securely via `https://yourdomain.com`, the industry-standard way is to run a lightweight reverse proxy like Nginx on the host server and secure it with a free Let's Encrypt SSL certificate.
+
+#### Step 1: Install Nginx & Certbot on your host server
+Run this command in your server terminal:
+```bash
+sudo apt update
+sudo apt install nginx certbot python3-certbot-nginx -y
+```
+
+#### Step 2: Configure Nginx reverse proxy
+Copy and paste this entire block directly into your terminal to write the proxy settings for your domain (replace `yourdomain.com` with your actual domain):
+```bash
+cat << 'EOF' > /etc/nginx/sites-available/syspulse-monitor.conf
+server {
+    listen 80;
+    server_name yourdomain.com; # <-- Put your domain here
+
+    location / {
+        proxy_pass http://127.0.0.1:8080; # Map to the panel port
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_http_version 1.1;
+    }
+}
+EOF
+
+# Activate configuration and restart Nginx
+ln -sf /etc/nginx/sites-available/syspulse-monitor.conf /etc/nginx/sites-enabled/
+rm -f /etc/nginx/sites-enabled/default
+systemctl restart nginx
+```
+
+#### Step 3: Get your free SSL certificate
+Run Certbot to request a Let's Encrypt SSL certificate and automatically update Nginx to support secure HTTPS:
+```bash
+sudo certbot --nginx -d yourdomain.com
+```
+Follow the interactive prompts. Once completed, your dashboard will be securely accessible at **`https://yourdomain.com`** with automated certificate renewals!
+
+## 🛠 Manual Setup
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/isitanand/syspulse-infrastructure-monitor.git
+   cd SysPulse-Monitor
+   ```
+
+2. **Setup virtual environment**:
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate
+   pip install -r requirements.txt
+   ```
+
+3. **Run the application**:
+   ```bash
+   uvicorn app:app --host 0.0.0.0 --port 8080
+   ```
+
+## 🔐 Security
+The dashboard enforces secure **HTTP Basic Authentication**.
+During installation, the script will prompt you to create a secure **Username** and **Password**. 
+These credentials are automatically injected into the dashboard's environment via the systemd service.
+
+## ⚙️ Management (Uninstall / Reconfigure / Status)
+All management options are built into the same install script. Just run it again:
+```bash
+curl -sL https://raw.githubusercontent.com/isitanand/syspulse-infrastructure-monitor/main/install.sh | sudo bash
+```
+The interactive menu will offer:
+1. 🚀 **Install / Update**
+2. 🗑️ **Uninstall**
+3. ⚙️ **Change Port / Credentials**
+4. 📋 **View Service Status**
+
+## 🌐 Virtual Browser
+
+The dashboard includes a **secure, Docker-based virtual Chromium browser** that runs directly on your server.
+
+### How It Works
+- A [linuxserver/chromium](https://docs.linuxserver.io/images/docker-chromium) container is deployed **locally** on port `127.0.0.1:3000` (never exposed externally).
+- All traffic is proxied through your existing HTTPS connection (port 443).
+- Two-layer authentication: **Dashboard login** + **Virtual Browser login**.
+
+### Usage
+1. Open the **Virtual Browser** modal from the dashboard.
+2. Set a **Username** and **Password** for the browser.
+3. Click **Install / Update** — Docker will be installed automatically if needed.
+4. Once ready, click **Open Browser Tab** to launch Chromium.
+
+### Requirements
+- **Docker** (auto-installed during setup)
+- ~1.5 GB disk space for the Chromium image
+- Works on **Ubuntu, Debian, AlmaLinux, Fedora, CentOS, RHEL**
+
+## 👨‍💻 Author
+Created by **isitanand**
+
+## 📄 License
+This project is for educational and personal use.

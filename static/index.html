@@ -1,0 +1,1608 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Server Monitor — Dashboard</title>
+    <meta name="description" content="Real-time server resource monitoring dashboard">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@500;600;700&family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/leaflet.css" />
+    <link rel="stylesheet" href="/static/xterm/xterm.css" />
+    <link rel="stylesheet" href="/static/style.css?v=33">
+</head>
+
+<body>
+    <!-- Background Effects -->
+    <div class="bg-effects">
+        <div class="bg-orb bg-orb-1"></div>
+        <div class="bg-orb bg-orb-2"></div>
+        <div class="bg-orb bg-orb-3"></div>
+    </div>
+
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <div class="logo">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                        <rect width="32" height="32" rx="8" fill="url(#logoGrad)" />
+                        <path d="M8 22V14L12 10L16 14V22" stroke="white" stroke-width="1.5" stroke-linecap="round"
+                            stroke-linejoin="round" />
+                        <path d="M16 22V10L20 6L24 10V22" stroke="white" stroke-width="1.5" stroke-linecap="round"
+                            stroke-linejoin="round" />
+                        <line x1="6" y1="22" x2="26" y2="22" stroke="white" stroke-width="1.5" stroke-linecap="round" />
+                        <defs>
+                            <linearGradient id="logoGrad" x1="0" y1="0" x2="32" y2="32">
+                                <stop stop-color="#6366f1" />
+                                <stop offset="1" stop-color="#8b5cf6" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <div>
+                    <h1>Server Monitor<span id="serverHostname" class="hostname-badge"></span></h1>
+                    <p class="header-subtitle" id="headerSubtitle">Connecting...</p>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="header-badges">
+                    <div class="load-badge" title="System Load Average">
+                        <span class="load-label">Load:</span>
+                        <span id="load1">—</span> / <span id="load5">—</span> / <span id="load15">—</span>
+                    </div>
+                    <div class="uptime-badge" id="uptimeBadge">
+                        <span class="pulse-dot"></span>
+                        <span id="uptimeText">—</span>
+                    </div>
+                    <button type="button" class="ssh-btn" id="btnSSH" title="Open Web SSH Terminal" style="border:none; cursor:pointer;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z">
+                            </path>
+                            <polyline points="9 9 11 12 9 15"></polyline>
+                            <line x1="13" y1="15" x2="17" y2="15"></line>
+                        </svg>
+                        SSH
+                    </button>
+                    <button type="button" class="ssh-btn" id="btnConsole" title="Emergency Console Access" style="border:none; cursor:pointer; background: linear-gradient(135deg, #4b5563 0%, #374151 100%);">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                            <line x1="8" y1="21" x2="16" y2="21"></line>
+                            <line x1="12" y1="17" x2="12" y2="21"></line>
+                        </svg>
+                        Console
+                    </button>
+                    <button class="update-btn" id="btnUpdatePanel" title="Check GitHub and update to the latest version">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+                            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+                        </svg>
+                        Update
+                    </button>
+                    <button class="reinstall-btn" id="btnReinstallPanel" title="Reinstall using local files (keeps current version)">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <polyline points="1 20 1 14 7 14"></polyline>
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                        </svg>
+                        Reinstall
+                    </button>
+                    <button class="v2ray-btn" id="btnV2rayOpen" title="V2ray Monitor">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                        </svg>
+                        V2ray
+                    </button>
+                    <button class="telegram-btn" id="btnTelegramOpen" title="Telegram Alerts">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+                            <path d="m22 2-7 20-4-9-9-4Z"/>
+                            <path d="M22 2 11 13"/>
+                        </svg>
+                        Telegram
+                    </button>
+                    <button class="v2ray-btn" id="btnDbWebMetricsOpen" title="Database & Web Server Metrics" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%);">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+                            <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                            <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+                            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+                        </svg>
+                        Services
+                    </button>
+                    <button class="v2ray-btn" id="btnDiagnosticsOpen" title="Network Diagnostics & Geo-IP Map" style="background: linear-gradient(135deg, #0284c7 0%, #38bdf8 100%);">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="2" y1="12" x2="22" y2="12"></line>
+                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                        </svg>
+                        Diagnostics
+                    </button>
+                    <button class="v2ray-btn" id="btnSecurityLogsOpen" title="Fail2ban, SSH & Live Log Viewer" style="background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        </svg>
+                        Security & Logs
+                    </button>
+                    <button class="v2ray-btn" id="btnDockerOpen" title="Docker Container Manager" style="background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+                            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                        </svg>
+                        Docker
+                    </button>
+                    <button class="v2ray-btn" id="btnDnsOpen" title="AdGuard Home DNS Monitor">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                            <path d="M9 12l2 2 4-4"></path>
+                        </svg>
+                        DNS
+                    </button>
+                    <button class="settings-btn" id="btnSettingsOpen" title="Panel Settings" style="display: none;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path
+                                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                            </path>
+                        </svg>
+                        Settings
+                    </button>
+                    <div class="refresh-dropdown-container" style="display: flex; align-items: center; margin-right: 15px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted); margin-right: 5px;">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                        </svg>
+                        <select id="globalRefreshSelect" class="iface-select" title="Auto Refresh Interval" style="height: 28px; padding: 0 8px; border-radius: 6px; font-size: 0.85rem;">
+                            <option value="1">1s</option>
+                            <option value="3" selected>3s</option>
+                            <option value="5">5s</option>
+                            <option value="10">10s</option>
+                            <option value="20">20s</option>
+                        </select>
+                    </div>
+                    <div class="theme-dropdown-container" id="themeDropdownContainer">
+                        <button class="theme-dropdown-btn" id="themeDropdownBtn" title="Select Theme"
+                            aria-haspopup="listbox" aria-expanded="false">
+                            <span class="theme-name-display" id="currentThemeName">☀️ Light</span>
+                            <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </button>
+                        <ul class="theme-menu" id="themeMenu" role="listbox" aria-labelledby="themeDropdownBtn">
+                            <li role="option" data-value="light" class="theme-option">☀️ Light</li>
+                            <li role="option" data-value="dark" class="theme-option">🌙 Dark</li>
+                            <li role="option" data-value="oled" class="theme-option">🖥️ OLED Black</li>
+                            <li role="option" data-value="tokyo-night" class="theme-option">🌃 Tokyo Night</li>
+                            <li role="option" data-value="monokai" class="theme-option">🎨 Monokai</li>
+                            <li role="option" data-value="synthwave" class="theme-option">📻 SynthWave '84</li>
+                            <li role="option" data-value="dracula" class="theme-option">🧛 Dracula</li>
+                            <li role="option" data-value="securecrt" class="theme-option">💻 SecureCRT</li>
+                            <li role="option" data-value="gruvbox" class="theme-option">🟤 Gruvbox Dark</li>
+                            <li role="option" data-value="cyberpunk" class="theme-option">⚡ Cyberpunk 2077</li>
+                            <li role="option" data-value="catppuccin-latte" class="theme-option">☕ Catppuccin Latte</li>
+                            <li role="option" data-value="solarized-light" class="theme-option">🟨 Solarized Light</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Current Stats Cards -->
+        <section class="stats-grid" id="statsGrid">
+            <div class="stat-card stat-card-cpu">
+                <div class="stat-header">
+                    <div class="stat-icon stat-icon-cpu">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <rect x="4" y="4" width="16" height="16" rx="2" />
+                            <rect x="9" y="9" width="6" height="6" />
+                            <line x1="9" y1="1" x2="9" y2="4" />
+                            <line x1="15" y1="1" x2="15" y2="4" />
+                            <line x1="9" y1="20" x2="9" y2="23" />
+                            <line x1="15" y1="20" x2="15" y2="23" />
+                            <line x1="20" y1="9" x2="23" y2="9" />
+                            <line x1="20" y1="14" x2="23" y2="14" />
+                            <line x1="1" y1="9" x2="4" y2="9" />
+                            <line x1="1" y1="14" x2="4" y2="14" />
+                        </svg>
+                    </div>
+                    <span class="stat-label">CPU</span>
+                </div>
+                <div class="cpu-model" id="cpuModelName">Fetching Info...</div>
+                <div class="stat-gauge-wrapper">
+                    <div class="stat-gauge" id="cpuGauge">
+                        <svg viewBox="0 0 120 120">
+                            <circle class="gauge-bg" cx="60" cy="60" r="52" />
+                            <circle class="gauge-fill gauge-fill-cpu" cx="60" cy="60" r="52" id="cpuGaugeFill" />
+                        </svg>
+                        <div class="gauge-value">
+                            <span class="gauge-number" id="cpuPercent">0</span>
+                            <span class="gauge-unit">%</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-details">
+                    <div class="stat-detail"><span>Cores</span><span id="cpuCores">—</span></div>
+                    <div class="stat-detail"><span>Frequency</span><span id="cpuFreq">—</span></div>
+                </div>
+                <div class="cpu-cores-section">
+                    <div class="cpu-cores-label">Per-Core Usage</div>
+                    <div id="cpuCoresGrid" class="cpu-cores-grid"></div>
+                </div>
+                <div class="cpu-benchmark-section">
+                    <div class="benchmark-actions">
+                        <button id="btnBenchmarkCpu" class="btn-benchmark">
+                            <span class="btn-text">Run Benchmark</span>
+                            <div class="btn-loader hidden"></div>
+                        </button>
+                        <button id="btnStopBenchmark" class="btn-benchmark btn-stop hidden">
+                            <span class="btn-text">Stop</span>
+                        </button>
+                    </div>
+                    <div id="benchmarkResult" class="benchmark-result hidden">Score: <span id="benchmarkScore">—</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card stat-card-ram">
+                <div class="stat-header">
+                    <div class="stat-icon stat-icon-ram">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <rect x="2" y="6" width="20" height="12" rx="2" />
+                            <line x1="6" y1="10" x2="6" y2="14" />
+                            <line x1="10" y1="10" x2="10" y2="14" />
+                            <line x1="14" y1="10" x2="14" y2="14" />
+                            <line x1="18" y1="10" x2="18" y2="14" />
+                        </svg>
+                    </div>
+                    <span class="stat-label">Memory</span>
+                </div>
+                <div class="stat-gauge-wrapper">
+                    <div class="stat-gauge" id="ramGauge">
+                        <svg viewBox="0 0 120 120">
+                            <circle class="gauge-bg" cx="60" cy="60" r="52" />
+                            <circle class="gauge-fill gauge-fill-ram" cx="60" cy="60" r="52" id="ramGaugeFill" />
+                        </svg>
+                        <div class="gauge-value">
+                            <span class="gauge-number" id="ramPercent">0</span>
+                            <span class="gauge-unit">%</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-details">
+                    <div class="stat-detail"><span>Total</span><span id="ramTotal">—</span></div>
+                    <div class="stat-detail"><span>Used</span><span id="ramUsed">—</span></div>
+                    <div class="stat-detail"><span>Free</span><span id="ramFree">—</span></div>
+                    <div class="stat-detail"><span>Shared</span><span id="ramShared">—</span></div>
+                    <div class="stat-detail"><span>Buff/Cache</span><span id="ramBuffCache">—</span></div>
+                    <div class="stat-detail"><span>Available</span><span id="ramAvailable">—</span></div>
+                    <div class="stat-detail"><span>Swap (Used/Total)</span><span id="ramSwap">—</span></div>
+                </div>
+            </div>
+
+            <div class="stat-card stat-card-disk">
+                <div class="stat-header">
+                    <div class="stat-icon stat-icon-disk">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <ellipse cx="12" cy="5" rx="9" ry="3" />
+                            <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
+                            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+                        </svg>
+                    </div>
+                    <span class="stat-label">Disk</span>
+                </div>
+                <div class="stat-gauge-wrapper">
+                    <div class="stat-gauge" id="diskGauge">
+                        <svg viewBox="0 0 120 120">
+                            <circle class="gauge-bg" cx="60" cy="60" r="52" />
+                            <circle class="gauge-fill gauge-fill-disk" cx="60" cy="60" r="52" id="diskGaugeFill" />
+                        </svg>
+                        <div class="gauge-value">
+                            <span class="gauge-number" id="diskPercent">0</span>
+                            <span class="gauge-unit">%</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-details">
+                    <div class="stat-detail"><span>Used</span><span id="diskUsed">—</span></div>
+                    <div class="stat-detail"><span>Free</span><span id="diskFree">—</span></div>
+                    <div class="stat-detail"><span>Read / Write Speed</span><span id="diskSpeed">— / —</span></div>
+                    <div class="stat-detail"><span>Read / Write IOPS</span><span id="diskIops">— / —</span></div>
+                </div>
+            </div>
+
+            <div class="stat-card stat-card-net">
+                <div class="stat-header">
+                    <div class="stat-icon stat-icon-net">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M12 20V10" />
+                            <path d="M18 20V4" />
+                            <path d="M6 20V16" />
+                        </svg>
+                    </div>
+                    <span class="stat-label">Network</span>
+                </div>
+                <div class="stat-gauge-wrapper">
+                    <div class="net-stats">
+                        <div class="net-stat">
+                            <span class="net-arrow net-arrow-up">↑</span>
+                            <div>
+                                <span class="net-value" id="netSent">0 Mbps</span>
+                                <span class="net-label">Upload</span>
+                            </div>
+                        </div>
+                        <div class="net-stat">
+                            <span class="net-arrow net-arrow-down">↓</span>
+                            <div>
+                                <span class="net-value" id="netRecv">0 Mbps</span>
+                                <span class="net-label">Download</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-details">
+                    <div class="stat-detail" style="align-items: center;">
+                        <span>Interface</span>
+                        <select id="nicSelect" class="iface-select"
+                            style="min-width:80px; padding:1px 4px; font-size:0.82rem; height:auto;"></select>
+                    </div>
+                    <div class="stat-detail"><span title="Packets per second">PPS (Up / Down)</span><span id="livePps"
+                            style="font-size:0.85rem;">— / —</span></div>
+                    <div class="stat-detail" style="align-items: center;">
+                        <span style="display:flex; align-items:center; gap:6px; white-space:nowrap;">Payload
+                            <select id="payloadRange" class="iface-select"
+                                style="padding:1px 4px; font-size:0.82rem; min-width:min-content; height:auto;">
+                                <option value="boot" selected>Since Boot</option>
+                                <option value="1h">1h</option>
+                                <option value="2h">2h</option>
+                                <option value="6h">6h</option>
+                                <option value="12h">12h</option>
+                                <option value="1d">1d</option>
+                                <option value="1w">1w</option>
+                                <option value="1m">1m</option>
+                            </select>
+                        </span>
+                        <span id="livePayload" style="font-size:0.82rem; white-space:nowrap;">— / —</span>
+                    </div>
+                    <div class="stat-detail"><span>TCP / UDP</span><span id="liveTcpUdp">— / —</span></div>
+                    <div class="stat-detail stat-detail-ip">
+                        <span>IPv4</span>
+                        <span id="publicIpv4" class="ip-badge">—</span>
+                    </div>
+                    <div class="stat-detail stat-detail-ip">
+                        <span>IPv6</span>
+                        <span id="publicIpv6" class="ip-badge ip-badge-v6">—</span>
+                    </div>
+                </div>
+                
+                <!-- Speed Test Section -->
+                <div class="stat-details speedtest-section" style="margin-top: 15px; border-top: 1px solid var(--border); padding-top: 15px;">
+                    <div style="font-weight: 500; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
+                        <span>Speed Test</span>
+                        <button id="btnSpeedTest" class="btn-benchmark" style="font-size: 0.8rem; padding: 4px 8px; width: auto; min-width: 80px; display: flex; justify-content: center; align-items: center;">
+                            <span class="btn-text" id="btnSpeedTestText">Run Test</span>
+                            <div class="btn-loader hidden" id="btnSpeedTestLoader"></div>
+                        </button>
+                    </div>
+                    <div class="stat-detail" style="align-items: center; margin-bottom: 8px;">
+                        <span style="font-size: 0.82rem;">Server</span>
+                        <select id="speedtestServer" class="iface-select" style="max-width:180px; padding:2px 4px; font-size:0.8rem; height:auto;">
+                            <option value="">Loading servers...</option>
+                        </select>
+                    </div>
+                    <div class="stat-detail" style="font-size: 0.82rem; margin-bottom: 4px;"><span>Ping</span><span id="speedtestPing">—</span></div>
+                    <div class="stat-detail" style="font-size: 0.82rem; margin-bottom: 4px;"><span>Download</span><span id="speedtestDownload">—</span></div>
+                    <div class="stat-detail" style="font-size: 0.82rem;"><span>Upload</span><span id="speedtestUpload">—</span></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Time Range Selector -->
+        <section class="range-section">
+            <div class="range-buttons" id="rangeButtons">
+                <button class="range-btn active" data-range="1h">1h</button>
+                <button class="range-btn" data-range="2h">2h</button>
+                <button class="range-btn" data-range="6h">6h</button>
+                <button class="range-btn" data-range="12h">12h</button>
+                <button class="range-btn" data-range="1d">1d</button>
+                <button class="range-btn" data-range="2d">2d</button>
+                <button class="range-btn" data-range="1w">1w</button>
+                <button class="range-btn" data-range="1m">1m</button>
+                <div class="custom-range-wrapper">
+                    <button class="range-btn range-btn-custom" id="btnCustomRange" title="Custom time range">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                        Custom
+                    </button>
+                    <div class="custom-range-popover" id="customRangePopover">
+                        <div class="custom-range-title">Custom Time Range</div>
+                        <div class="custom-range-row">
+                            <input type="number" id="customRangeValue" min="1" max="90" value="3" class="custom-range-input" />
+                            <select id="customRangeUnit" class="custom-range-unit">
+                                <option value="3600">Hours</option>
+                                <option value="86400">Days</option>
+                            </select>
+                            <button id="btnApplyCustomRange" class="custom-range-apply">Apply</button>
+                        </div>
+                        <div class="custom-range-presets">
+                            <button class="custom-preset" data-hours="3">3h</button>
+                            <button class="custom-preset" data-hours="4">4h</button>
+                            <button class="custom-preset" data-hours="8">8h</button>
+                            <button class="custom-preset" data-hours="18">18h</button>
+                            <button class="custom-preset" data-hours="72">3d</button>
+                            <button class="custom-preset" data-hours="120">5d</button>
+                            <button class="custom-preset" data-hours="240">10d</button>
+                            <button class="custom-preset" data-hours="720">30d</button>
+                            <button class="custom-preset" data-hours="1440">60d</button>
+                            <button class="custom-preset" data-hours="2160">90d</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="range-right-controls">
+                <div class="smooth-control" title="Smooth noisy data with a moving average">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M2 12c2-4 6-4 8 0s6 4 8 0" />
+                    </svg>
+                    <label for="smoothLevel">Smooth:</label>
+                    <select id="smoothLevel" class="iface-select">
+                        <option value="0">Off</option>
+                        <option value="3">Light</option>
+                        <option value="7" selected>Medium</option>
+                        <option value="15">Heavy</option>
+                        <option value="30">Ultra</option>
+                    </select>
+                </div>
+                <div class="refresh-info">
+                    <span class="refresh-dot"></span>
+                    Auto-refresh every 1m
+                </div>
+            </div>
+        </section>
+
+        <!-- Charts -->
+        <section class="charts-grid">
+            <div class="chart-card chart-card-cpu">
+                <div class="chart-header">
+                    <h3>CPU Usage</h3>
+                    <div class="chart-header-controls">
+                        <div class="net-max-input" title="Set Y-axis max CPU %">
+                            <label for="cpuDynamicMax">Max:</label>
+                            <input type="number" id="cpuDynamicMax" value="70" min="10" max="100" step="5">
+                            <span>%</span>
+                        </div>
+                        <label style="font-size:0.85rem; display:flex; align-items:center; gap:4px; cursor:pointer;">
+                            <input type="checkbox" id="cpuChartAutoMax"> Auto
+                        </label>
+                        <span class="chart-badge chart-badge-cpu" id="cpuAvgBadge">Avg: —%</span>
+                        <button class="btn-fullscreen" title="Toggle Fullscreen">
+                            <svg class="icon-expand" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+                            </svg>
+                            <svg class="icon-compress" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                style="display:none;">
+                                <path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14l-7 7" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="cpuChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card chart-card-load">
+                <div class="chart-header">
+                    <h3>Load Average</h3>
+                    <div class="chart-header-controls">
+                        <span class="chart-badge chart-badge-load" id="loadAvgBadge">Avg: — / — / —</span>
+                        <button class="btn-fullscreen" title="Toggle Fullscreen">
+                            <svg class="icon-expand" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+                            </svg>
+                            <svg class="icon-compress" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                style="display:none;">
+                                <path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14l-7 7" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="loadChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card chart-card-ram">
+                <div class="chart-header">
+                    <h3>Memory Usage</h3>
+                    <div class="chart-header-controls">
+                        <span class="chart-badge chart-badge-ram" id="ramAvgBadge">Avg: —%</span>
+                        <button class="btn-fullscreen" title="Toggle Fullscreen">
+                            <svg class="icon-expand" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+                            </svg>
+                            <svg class="icon-compress" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                style="display:none;">
+                                <path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14l-7 7" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="ramChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card chart-card-payload">
+                <div class="chart-header">
+                    <h3 style="display:flex; align-items:center; gap:6px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                        </svg>
+                        Daily Network Payload
+                    </h3>
+                    <div class="chart-header-controls">
+                        <select id="payloadChartIfaceSelect" class="iface-select" style="padding:1px 4px; font-size:0.85rem; height:auto; margin-right:6px;" title="Select Network Interface">
+                            <option value="ens3" selected>ens3</option>
+                        </select>
+                        <select id="payloadChartDaysSelect" class="iface-select" style="padding:1px 4px; font-size:0.85rem; height:auto; margin-right:8px;" title="Select Days Range">
+                            <option value="7">Last 7 Days</option>
+                            <option value="14">Last 14 Days</option>
+                            <option value="30" selected>Last 30 Days</option>
+                            <option value="60">Last 60 Days</option>
+                            <option value="90">Last 90 Days</option>
+                        </select>
+                        <span class="chart-badge chart-badge-payload live-legend" id="payloadChartSummaryBadge">
+                            <span style="color:#0ea5e9" id="payloadSummaryDown">Down: 0.0 GB</span> &nbsp;|&nbsp;
+                            <span style="color:#10b981" id="payloadSummaryUp">Up: 0.0 GB</span> &nbsp;|&nbsp;
+                            <span style="color:#f59e0b" id="payloadSummaryTotal">Total: 0.0 GB</span>
+                        </span>
+                        <button class="btn-fullscreen" title="Toggle Fullscreen">
+                            <svg class="icon-expand" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+                            </svg>
+                            <svg class="icon-compress" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                style="display:none;">
+                                <path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14l-7 7" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="payloadDailyChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card chart-card-net">
+                <div class="chart-header">
+                    <h3>Network I/O</h3>
+                    <div class="chart-header-controls">
+                        <select id="netChartIfaceSelect" class="iface-select" style="padding:1px 4px; font-size:0.85rem; height:auto; margin-right:8px;">
+                            <option value="ens3" selected>ens3</option>
+                        </select>
+                        <div class="net-max-input" title="Set Y-axis max in Mbps">
+                            <label for="netMaxMbps">Max:</label>
+                            <input type="number" id="netMaxMbps" value="120" min="10" max="10000" step="10">
+                            <span>Mbps</span>
+                        </div>
+                        <label style="font-size:0.85rem; display:flex; align-items:center; gap:4px; margin-left:8px; cursor:pointer;">
+                            <input type="checkbox" id="netChartAutoMax"> Auto
+                        </label>
+                        <span class="chart-badge chart-badge-net live-legend" id="netChartLiveVals">
+                            <span style="color:#10b981">Up Min/Max/Avg: 0.0/0.0/0.0 Mbps</span> &nbsp;|&nbsp;
+                            <span style="color:#0ea5e9">Down Min/Max/Avg: 0.0/0.0/0.0 Mbps</span>
+                        </span>
+                        <button class="btn-fullscreen" title="Toggle Fullscreen">
+                            <svg class="icon-expand" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+                            </svg>
+                            <svg class="icon-compress" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                style="display:none;">
+                                <path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14l-7 7" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="netChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card chart-card-conn">
+                <div class="chart-header">
+                    <h3>🔗 TCP / UDP Connections</h3>
+                    <div class="chart-header-controls">
+                        <select id="connIfaceSelect" class="iface-select" title="Filter by interface">
+                            <option value="Total" selected>Total</option>
+                        </select>
+                        <label style="font-size:0.85rem; display:flex; align-items:center; gap:4px; cursor:pointer;">
+                            <input type="checkbox" id="connChartAutoMax" checked> Auto
+                        </label>
+                        <span class="chart-badge chart-badge-conn" id="connBadge">—</span>
+                        <button class="btn-fullscreen" title="Toggle Fullscreen">
+                            <svg class="icon-expand" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+                            </svg>
+                            <svg class="icon-compress" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                style="display:none;">
+                                <path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14l-7 7" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="connChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card chart-card-disk">
+                <div class="chart-header">
+                    <h3>Disk Usage & Speed</h3>
+                    <div class="chart-header-controls">
+                        <span class="chart-badge chart-badge-disk" id="diskAvgBadge">Avg: —%</span>
+                        <button class="btn-fullscreen" title="Toggle Fullscreen">
+                            <svg class="icon-expand" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+                            </svg>
+                            <svg class="icon-compress" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                style="display:none;">
+                                <path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14l-7 7" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="diskChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card chart-card-iops">
+                <div class="chart-header">
+                    <h3>Disk IOPS</h3>
+                    <div class="chart-header-controls">
+                        <span class="chart-badge chart-badge-iops" id="iopsAvgBadge">-</span>
+                        <button class="btn-fullscreen" title="Toggle Fullscreen">
+                            <svg class="icon-expand" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+                            </svg>
+                            <svg class="icon-compress" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                style="display:none;">
+                                <path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14l-7 7" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="diskIopsChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Top Processes Area -->
+        <section class="processes-section">
+            <div class="ext-card">
+                <div class="ext-header" style="margin-bottom: 15px;">
+                    <div class="ext-title-area">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #f43f5e;">
+                            <polygon
+                                points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+                            </polygon>
+                        </svg>
+                        <div class="ext-titles">
+                            <h3>Top Processes</h3>
+                            <p>Most resource-intensive processes (CPU & RAM)</p>
+                        </div>
+                    </div>
+                    <div class="ext-actions">
+                        <select id="topProcRefresh" class="iface-select" title="Refresh Interval">
+                            <option value="5000" selected>5 Seconds</option>
+                            <option value="10000">10 Seconds</option>
+                            <option value="20000">20 Seconds</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="process-table-container">
+                    <table class="process-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 80px;">PID</th>
+                                <th>Command / Process</th>
+                                <th style="width: 100px;">User</th>
+                                <th style="text-align: right; width: 80px;">Mem</th>
+                                <th style="text-align: right; width: 80px;">CPU %</th>
+                            </tr>
+                        </thead>
+                        <tbody id="topProcessesBody">
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 20px;">
+                                    Loading top processes...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Extensions Area -->
+        <section class="extensions-section">
+            <div class="ext-card">
+                <div class="ext-header">
+                    <div class="ext-title-area">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                            <line x1="8" y1="21" x2="16" y2="21"></line>
+                            <line x1="12" y1="17" x2="12" y2="21"></line>
+                        </svg>
+                        <div class="ext-titles">
+                            <h3>Virtual Browser</h3>
+                            <p>Secure, isolated KasmVNC Chromium</p>
+                        </div>
+                    </div>
+                    <div class="ext-actions">
+                        <span class="badge badge-error" id="browserStatusBadge">Not Installed</span>
+                        <button class="ssh-btn" style="border:none; cursor:pointer;" id="btnManageBrowser">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="3"></circle>
+                                <path
+                                    d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                                </path>
+                            </svg>
+                            Manage
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>SysPulse Telemetry Dashboard <span id="panelVersion">v1.0.0</span> &copy; 2026 By <a href="https://github.com/isitanand/syspulse-infrastructure-monitor" target="_blank" class="github-link">isitanand</a></p>
+        </footer>
+    </div>
+
+    <!-- Telegram Alerts Overlay -->
+    <div id="telegramOverlay" class="login-overlay hidden">
+        <div class="login-box telegram-modal-box">
+            <button id="closeTelegram" class="btn-close-overlay">×</button>
+            <div class="login-header" style="margin-bottom: 20px;">
+                <h2 style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #0088cc;">
+                        <path d="m22 2-7 20-4-9-9-4Z"/>
+                        <path d="M22 2 11 13"/>
+                    </svg>
+                    Telegram Alerts
+                </h2>
+                <p>Configure automated notifications & threshold alerts</p>
+            </div>
+            
+            <div class="telegram-form" style="display: flex; flex-direction: column; gap: 15px;">
+                <div class="form-group" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 8px; background: rgba(0, 136, 204, 0.08); border: 1px solid rgba(0, 136, 204, 0.2); margin-bottom: 5px;">
+                    <label for="tgEnabled" style="font-size: 0.88rem; font-weight: 600; color: var(--text-primary); cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;">
+                        <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #10b981;"></span>
+                        Enable Telegram Integration
+                    </label>
+                    <input type="checkbox" id="tgEnabled" checked style="width: 18px; height: 18px; cursor: pointer;">
+                </div>
+
+                <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                    <label for="tgBotToken" style="font-size: 0.82rem; font-weight: 500; color: var(--text-secondary);">Bot Token (from @BotFather)</label>
+                    <input type="text" id="tgBotToken" placeholder="e.g. 1234567890:ABCdefGhIJKlmNoPQRsTUVwxyZ" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 0.9rem; outline: none;">
+                </div>
+                
+                <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                    <label for="tgChatId" style="font-size: 0.82rem; font-weight: 500; color: var(--text-secondary);">User / Chat ID</label>
+                    <input type="text" id="tgChatId" placeholder="e.g. 987654321" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 0.9rem; outline: none;">
+                </div>
+
+                <div style="border-top: 1px solid var(--border-color); margin: 5px 0; padding-top: 15px;">
+                    <h3 style="font-size: 0.95rem; font-weight: 500; margin-bottom: 12px; color: var(--text-primary);">Automatic Reports</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                            <label for="tgInterval" style="font-size: 0.82rem; font-weight: 500; color: var(--text-secondary);">Report Interval</label>
+                            <select id="tgInterval" class="iface-select" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 0.9rem; outline: none; height: auto;">
+                                <option value="0">Disabled</option>
+                                <option value="-5">Every 5 Minutes (Testing)</option>
+                                <option value="-1">Custom (Minutes)</option>
+                                <option value="1">Every 1 Hour</option>
+                                <option value="2">Every 2 Hours</option>
+                                <option value="4">Every 4 Hours</option>
+                                <option value="6">Every 6 Hours</option>
+                                <option value="12">Every 12 Hours</option>
+                                <option value="24">Every 24 Hours</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                            <label for="tgGraphHours" style="font-size: 0.82rem; font-weight: 500; color: var(--text-secondary);">Graph Duration</label>
+                            <select id="tgGraphHours" class="iface-select" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 0.9rem; outline: none; height: auto;">
+                                <option value="1">1 Hour</option>
+                                <option value="3">3 Hours</option>
+                                <option value="6">6 Hours</option>
+                                <option value="12">12 Hours</option>
+                                <option value="24">24 Hours</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="tgCustomIntervalContainer" class="form-group" style="display: none; flex-direction: column; gap: 6px; margin-top: 10px;">
+                        <label for="tgCustomInterval" style="font-size: 0.82rem; font-weight: 500; color: var(--text-secondary);">Custom Interval (Minutes)</label>
+                        <input type="number" id="tgCustomInterval" placeholder="e.g. 5" min="1" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 0.9rem; outline: none;">
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 12px;">
+                        <label style="font-size: 0.82rem; font-weight: 500; color: var(--text-secondary); margin-bottom: 2px;">Attach Graphs:</label>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-bottom: 0;">
+                                <input type="checkbox" id="tgSendCpuGraph" checked style="width: 16px; height: 16px; cursor: pointer;">
+                                <label for="tgSendCpuGraph" style="font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); cursor: pointer; user-select: none;">
+                                    CPU Graph
+                                </label>
+                            </div>
+                            <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-bottom: 0;">
+                                <input type="checkbox" id="tgSendRamGraph" checked style="width: 16px; height: 16px; cursor: pointer;">
+                                <label for="tgSendRamGraph" style="font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); cursor: pointer; user-select: none;">
+                                    Memory Graph
+                                </label>
+                            </div>
+                            <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-bottom: 0;">
+                                <input type="checkbox" id="tgSendLoad1mGraph" checked style="width: 16px; height: 16px; cursor: pointer;">
+                                <label for="tgSendLoad1mGraph" style="font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); cursor: pointer; user-select: none;">
+                                    Load Avg 1m
+                                </label>
+                            </div>
+                            <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-bottom: 0;">
+                                <input type="checkbox" id="tgSendLoad5mGraph" checked style="width: 16px; height: 16px; cursor: pointer;">
+                                <label for="tgSendLoad5mGraph" style="font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); cursor: pointer; user-select: none;">
+                                    Load Avg 5m
+                                </label>
+                            </div>
+                            <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-bottom: 0;">
+                                <input type="checkbox" id="tgSendLoad15mGraph" checked style="width: 16px; height: 16px; cursor: pointer;">
+                                <label for="tgSendLoad15mGraph" style="font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); cursor: pointer; user-select: none;">
+                                    Load Avg 15m
+                                </label>
+                            </div>
+                            <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-bottom: 0;">
+                                <input type="checkbox" id="tgSendNetGraph" checked style="width: 16px; height: 16px; cursor: pointer;">
+                                <label for="tgSendNetGraph" style="font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); cursor: pointer; user-select: none;">
+                                    Network Graph
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="border-top: 1px solid var(--border-color); margin: 5px 0; padding-top: 15px;">
+                    <h3 style="font-size: 0.95rem; font-weight: 500; margin-bottom: 12px; color: var(--text-primary);">Threshold Alerts</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                            <label for="tgCpuTh" style="font-size: 0.82rem; font-weight: 500; color: var(--text-secondary);">CPU Threshold (%)</label>
+                            <input type="number" id="tgCpuTh" placeholder="e.g. 90 (0 to disable)" min="0" max="100" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 0.9rem; outline: none;">
+                        </div>
+                        <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                            <label for="tgRamTh" style="font-size: 0.82rem; font-weight: 500; color: var(--text-secondary);">RAM Threshold (%)</label>
+                            <input type="number" id="tgRamTh" placeholder="e.g. 85 (0 to disable)" min="0" max="100" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 0.9rem; outline: none;">
+                        </div>
+                        <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                            <label for="tgLoadTh" style="font-size: 0.82rem; font-weight: 500; color: var(--text-secondary);">Load Avg Threshold</label>
+                            <input type="number" id="tgLoadTh" placeholder="e.g. 4.0 (0 to disable)" min="0" step="0.1" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 0.9rem; outline: none;">
+                        </div>
+                        <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                            <label for="tgLoadAvgType" style="font-size: 0.82rem; font-weight: 500; color: var(--text-secondary);">Load Avg Duration</label>
+                            <select id="tgLoadAvgType" class="iface-select" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 0.9rem; outline: none; height: auto;">
+                                <option value="1">1 Minute (1m)</option>
+                                <option value="5">5 Minutes (5m)</option>
+                                <option value="15">15 Minutes (15m)</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                            <label for="tgDiskTh" style="font-size: 0.82rem; font-weight: 500; color: var(--text-secondary);">Disk Threshold (%)</label>
+                            <input type="number" id="tgDiskTh" placeholder="e.g. 95 (0 to disable)" min="0" max="100" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 0.9rem; outline: none;">
+                        </div>
+                    </div>
+                    <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-top: 12px;">
+                        <input type="checkbox" id="tgAlertSendGraph" style="width: 16px; height: 16px; cursor: pointer;">
+                        <label for="tgAlertSendGraph" style="font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); cursor: pointer; user-select: none;">
+                            Attach Performance Graph to Threshold Alerts
+                        </label>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 12px; margin-top: 10px;">
+                    <button id="btnTelegramTest" class="ssh-btn" style="flex: 1; border: none; cursor: pointer; justify-content: center; height: 40px; font-weight: 500;">
+                        Send Test Message
+                    </button>
+                    <button id="btnTelegramSave" class="ssh-btn" style="flex: 1; border: none; cursor: pointer; justify-content: center; height: 40px; background: linear-gradient(135deg, #0088cc, #00a2ed); color: white; font-weight: 500;">
+                        Save Settings
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AdGuard DNS Monitor Overlay -->
+    <div id="dnsOverlay" class="login-overlay hidden">
+        <div class="login-box v2ray-modal-box" style="max-width: 1100px !important;">
+            <button id="closeDns" class="btn-close-overlay">×</button>
+            <div class="login-header" style="margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.3); display: flex; align-items: center; justify-content: center; color: #22c55e;">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                            <path d="M9 12l2 2 4-4"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 style="margin: 0; font-size: 1.35rem; font-weight: 700; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+                            AdGuard DNS Monitor
+                            <span id="dnsVersionBadge" style="font-size: 0.72rem; padding: 2px 8px; border-radius: 9999px; background: #232733; color: #38bdf8; border: 1px solid #32384a; font-weight: 600;">v0.107</span>
+                            <span id="dnsProtectionBadge" style="font-size: 0.72rem; padding: 2px 8px; border-radius: 9999px; background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.35); font-weight: 600;">PROTECTION ON</span>
+                        </h2>
+                        <p style="margin: 2px 0 0 0; font-size: 0.8rem; color: #787f8d;">Real-time query telemetry, latency matrix & domain analytics</p>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="font-size: 0.8rem; color: #787f8d; display: flex; align-items: center; gap: 6px; background: #17181c; padding: 6px 12px; border-radius: 8px; border: 1px solid #2a2c33;">
+                        <span class="pulse-dot" style="background:#22c55e;"></span>
+                        Auto-refresh: 5s
+                    </div>
+                    <button id="btnRefreshDnsManual" class="ssh-btn" style="padding: 6px 12px; font-size: 0.8rem; cursor: pointer;" title="Refresh DNS Stats">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+                        </svg>
+                        Refresh
+                    </button>
+                </div>
+            </div>
+
+            <!-- Top 4 Metric Cards -->
+            <div class="dns-stats-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px;">
+                <div class="dns-stat-card" style="background: #17181c; border: 1px solid #2a2c33; border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 4px;">
+                    <span style="font-size: 0.78rem; color: #787f8d; text-transform: uppercase; letter-spacing: 0.04em;">Total Queries (24h)</span>
+                    <div style="display: flex; align-items: baseline; justify-content: space-between;">
+                        <span id="dnsStatTotalQueries" style="font-size: 1.45rem; font-weight: 700; color: #ffffff;">—</span>
+                        <span id="dnsStatQps" style="font-size: 0.82rem; color: #22c55e; font-weight: 600;">— QPS</span>
+                    </div>
+                </div>
+                <div class="dns-stat-card" style="background: #17181c; border: 1px solid #2a2c33; border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 4px;">
+                    <span style="font-size: 0.78rem; color: #787f8d; text-transform: uppercase; letter-spacing: 0.04em;">Avg Processing Time</span>
+                    <div style="display: flex; align-items: baseline; justify-content: space-between;">
+                        <span id="dnsStatAvgLatency" style="font-size: 1.45rem; font-weight: 700; color: #38bdf8;">— ms</span>
+                        <span id="dnsStatLatencyStatus" style="font-size: 0.78rem; padding: 2px 6px; border-radius: 4px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; font-weight: 600;">Fast</span>
+                    </div>
+                </div>
+                <div class="dns-stat-card" style="background: #17181c; border: 1px solid #2a2c33; border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 4px;">
+                    <span style="font-size: 0.78rem; color: #787f8d; text-transform: uppercase; letter-spacing: 0.04em;">Blocked by Filters</span>
+                    <div style="display: flex; align-items: baseline; justify-content: space-between;">
+                        <span id="dnsStatBlockedCount" style="font-size: 1.45rem; font-weight: 700; color: #ffffff;">0</span>
+                        <span id="dnsStatBlockedPct" style="font-size: 0.82rem; color: #fbbf24; font-weight: 600;">0%</span>
+                    </div>
+                </div>
+                <div class="dns-stat-card" style="background: #17181c; border: 1px solid #2a2c33; border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 4px;">
+                    <span style="font-size: 0.78rem; color: #787f8d; text-transform: uppercase; letter-spacing: 0.04em;">Fastest Upstream</span>
+                    <div style="display: flex; align-items: baseline; justify-content: space-between;">
+                        <span id="dnsStatFastestUpstream" style="font-size: 0.95rem; font-weight: 600; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px;">—</span>
+                        <span id="dnsStatFastestLatency" style="font-size: 0.82rem; color: #22c55e; font-weight: 600;">— ms</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 24-Hour Query Volume Chart -->
+            <div style="background: #17181c; border: 1px solid #2a2c33; border-radius: 10px; padding: 16px; margin-bottom: 20px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                    <h3 style="font-size: 0.95rem; font-weight: 600; color: #ffffff; display: flex; align-items: center; gap: 6px; margin: 0;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                        </svg>
+                        24-Hour DNS Queries & Blocked History
+                    </h3>
+                    <div style="display: flex; gap: 12px; font-size: 0.8rem;">
+                        <span style="display: flex; align-items: center; gap: 5px; color: #22c55e;">
+                            <span style="width: 8px; height: 8px; border-radius: 50%; background: #22c55e;"></span>
+                            Total Queries
+                        </span>
+                        <span style="display: flex; align-items: center; gap: 5px; color: #f43f5e;">
+                            <span style="width: 8px; height: 8px; border-radius: 50%; background: #f43f5e;"></span>
+                            Blocked
+                        </span>
+                    </div>
+                </div>
+                <div style="height: 180px; position: relative;">
+                    <canvas id="dnsQueryChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Upstream DNS Latency Matrix -->
+            <div style="background: #17181c; border: 1px solid #2a2c33; border-radius: 10px; padding: 16px; margin-bottom: 20px;">
+                <h3 style="font-size: 0.95rem; font-weight: 600; color: #ffffff; margin-top: 0; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="2" y1="12" x2="22" y2="12"></line>
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                    </svg>
+                    Upstream DNS Health & Latency Matrix
+                </h3>
+                <div id="dnsUpstreamList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px;">
+                    <div style="color: #787f8d; font-size: 0.85rem; padding: 10px;">Loading upstreams...</div>
+                </div>
+            </div>
+
+            <!-- 2-Column Analytics: Top Domains & Top Clients -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <!-- Top Domains -->
+                <div style="background: #17181c; border: 1px solid #2a2c33; border-radius: 10px; padding: 16px;">
+                    <h3 style="font-size: 0.95rem; font-weight: 600; color: #ffffff; margin-top: 0; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                        Top Queried Domains
+                    </h3>
+                    <div id="dnsTopDomainsList" style="max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 4px;">
+                        <div style="color: #787f8d; font-size: 0.85rem;">Loading domains...</div>
+                    </div>
+                </div>
+
+                <!-- Top Clients -->
+                <div style="background: #17181c; border: 1px solid #2a2c33; border-radius: 10px; padding: 16px;">
+                    <h3 style="font-size: 0.95rem; font-weight: 600; color: #ffffff; margin-top: 0; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                        Top Active Clients (IPs)
+                    </h3>
+                    <div id="dnsTopClientsList" style="max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 4px;">
+                        <div style="color: #787f8d; font-size: 0.85rem;">Loading clients...</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- V2ray Monitor Overlay -->
+    <div id="v2rayOverlay" class="login-overlay hidden">
+        <div class="login-box v2ray-modal-box">
+            <button id="closeV2ray" class="btn-close-overlay">×</button>
+            <div class="login-header" style="margin-bottom: 20px;">
+                <h2 style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #6366f1;">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                    </svg>
+                    V2ray User Bandwidth Monitor
+                </h2>
+                <p>Real-time traffic accounting and speed tracking</p>
+            </div>
+            
+            <div class="v2ray-controls" style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; align-items: center;">
+                <input type="text" id="v2raySearch" placeholder="Search users by email..." style="flex: 1; min-width: 200px; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 0.9rem; outline: none; transition: border-color 0.2s;">
+                <div class="v2ray-stats" style="flex: 1; text-align: center; font-size: 0.9rem; color: var(--text-secondary); background: var(--bg-card); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); white-space: nowrap;">
+                    Online: <span id="v2rayActiveCount" style="color: #10b981; font-weight: bold;">0</span> / Total: <span id="v2rayTotalCount" style="font-weight: bold;">0</span>
+                </div>
+                <div class="v2ray-stats" id="v2rayTimerContainer" style="flex: 0.5; text-align: center; font-size: 0.9rem; color: var(--text-secondary); background: var(--bg-card); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); white-space: nowrap; display: flex; align-items: center; justify-content: center; gap: 6px; transition: border-color 0.5s ease, background 0.5s ease;">
+                    <svg style="width: 14px; height: 14px; color: #6366f1;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    Sync: <span id="v2rayTimer" style="font-weight: bold; color: #6366f1;">60s</span>
+                </div>
+            </div>
+            
+            <div class="process-table-container" style="max-height: 480px; overflow-y: auto; border-radius: 8px; border: 1px solid var(--border-color);">
+                <table class="process-table" id="v2rayTable">
+                    <thead>
+                        <tr>
+                            <th style="position: sticky; top: 0; background: var(--bg-card); z-index: 1;">User (Email)</th>
+                            <th style="position: sticky; top: 0; background: var(--bg-card); z-index: 1; text-align: right;">Download Speed</th>
+                            <th style="position: sticky; top: 0; background: var(--bg-card); z-index: 1; text-align: right;">Upload Speed</th>
+                            <th style="position: sticky; top: 0; background: var(--bg-card); z-index: 1; text-align: right;">Total Down</th>
+                            <th style="position: sticky; top: 0; background: var(--bg-card); z-index: 1; text-align: right;">Total Up</th>
+                            <th style="position: sticky; top: 0; background: var(--bg-card); z-index: 1; text-align: center;">IPs</th>
+                            <th style="position: sticky; top: 0; background: var(--bg-card); z-index: 1; text-align: center;">Last Active</th>
+                        </tr>
+                    </thead>
+                    <tbody id="v2rayTableBody">
+                        <tr>
+                            <td colspan="7" style="text-align: center; padding: 30px; color: var(--text-secondary);">Loading V2ray users...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Overlay -->
+    <div id="settingsOverlay" class="login-overlay hidden">
+        <div class="login-box settings-box">
+            <button id="closeSettings" class="btn-close-overlay">×</button>
+            <div class="login-header">
+                <h2>Panel Settings</h2>
+                <p>Manage SSL Certificates and Database Backups</p>
+            </div>
+
+            <div class="settings-section">
+                <h3><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg> SSL Configuration</h3>
+                <p class="settings-desc">Paste your SSL certificate details below to enable HTTPS. Leave blank to
+                    disable SSL and revert to HTTP.</p>
+
+                <form id="sslForm" autocomplete="off">
+                    <div class="form-group">
+                        <label for="sslKey">Private Key (.key / .pem)</label>
+                        <textarea id="sslKey" class="form-control" rows="4"
+                            placeholder="-----BEGIN PRIVATE KEY-----..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="sslCert">Certificate (.crt / .pem)</label>
+                        <textarea id="sslCert" class="form-control" rows="4"
+                            placeholder="-----BEGIN CERTIFICATE-----..."></textarea>
+                    </div>
+
+                    <button type="submit" id="btnSaveSSL" class="btn-login" style="margin-top: 10px;">
+                        <span class="btn-text">Save & Restart Panel</span>
+                        <div class="btn-loader hidden"></div>
+                    </button>
+                </form>
+            </div>
+
+            <div class="settings-divider"></div>
+
+            <div class="settings-section">
+                <h3><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                        <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+                        <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+                    </svg> Database Management</h3>
+                <p class="settings-desc">Download a complete snapshot of all historical server metrics, or upload an
+                    existing `metrics.db` backup file.</p>
+                <div class="db-actions">
+                    <button id="btnBackupDb" class="btn-db btn-db-download">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        Download Backup
+                    </button>
+                    <div class="upload-wrapper">
+                        <input type="file" id="dbFileInput" accept=".db,.sqlite" class="hidden">
+                        <button id="btnRestoreDb" class="btn-db btn-db-upload">
+                            <span class="btn-text" style="display:flex;align-items:center;gap:6px;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="17 8 12 3 7 8"></polyline>
+                                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                                </svg>
+                                Restore & Restart
+                            </span>
+                            <div class="btn-loader hidden"></div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Virtual Browser Overlay -->
+    <div id="browserOverlay" class="login-overlay hidden">
+        <div class="login-box settings-box" style="max-width: 600px;">
+            <button id="closeBrowser" class="btn-close-overlay">×</button>
+            <div class="login-header">
+                <h2>Virtual Browser Setup</h2>
+                <p>Deploy a secure headless browser accessible via WebRTC</p>
+            </div>
+
+            <div class="settings-section">
+                <form id="browserForm" autocomplete="off">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom:15px;">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label for="browserUser">Username (Basic Auth)</label>
+                            <input type="text" id="browserUser" class="form-control" placeholder="admin" required>
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label for="browserPass">Password</label>
+                            <input type="password" id="browserPass" class="form-control" placeholder="••••••••"
+                                required>
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label for="browserRes">Resolution</label>
+                            <select id="browserRes" class="form-control" style="appearance: auto;"
+                                title="Browser Resolution">
+                                <option value="1280x720">1280x720 (HD)</option>
+                                <option value="1920x1080">1920x1080 (FHD)</option>
+                                <option value="2560x1440" selected>2560x1440 (2K)</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label for="browserQuality">Quality</label>
+                            <select id="browserQuality" class="form-control" style="appearance: auto;"
+                                title="Stream Quality">
+                                <option value="low">Low (Fast)</option>
+                                <option value="medium">Medium</option>
+                                <option value="high" selected>High (Best visual)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="browser-actions" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <button type="button" id="btnBrowserInstall" class="btn-login">
+                            <span class="btn-text">Install / Update</span>
+                            <div class="btn-loader hidden"></div>
+                        </button>
+
+                        <button type="button" id="btnBrowserClear" class="btn-db btn-db-download">
+                            Clear Cache
+                        </button>
+
+                        <button type="button" id="btnBrowserStart" class="btn-login"
+                            style="display:none; background: linear-gradient(135deg, #10b981, #059669);">
+                            Start
+                        </button>
+
+                        <button type="button" id="btnBrowserStop" class="btn-db btn-db-upload"
+                            style="display:none; border-color: #ef4444; color: #ef4444;">
+                            Stop
+                        </button>
+
+                        <button type="button" id="btnBrowserUninstall" class="btn-db btn-db-upload"
+                            style="grid-column: span 2; border-color: #ef4444; color: #ef4444;">
+                            Uninstall Completely
+                        </button>
+                    </div>
+
+                    <div style="margin-top: 15px;">
+                        <button type="button" id="btnBrowserOpen" class="btn-login" style="width:100%;" disabled>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                style="margin-right:8px; vertical-align:middle;">
+                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                <polyline points="15 3 21 3 21 9"></polyline>
+                                <line x1="10" y1="14" x2="21" y2="3"></line>
+                            </svg>
+                            Open Browser Tab
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="settings-divider"></div>
+
+            <div class="settings-section">
+                <h3>Live Setup Console</h3>
+                <div class="terminal-log-box" id="browserLogBox">
+                    <pre id="browserLogs" style="color: #10b981 !important;">Waiting for action...</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Benchmark Overlay -->
+    <div id="benchmarkOverlay" class="login-overlay hidden">
+        <div class="login-box benchmark-modal-box">
+            <button id="closeBenchmark" class="btn-close-overlay">×</button>
+            <div class="login-header">
+                <h2>Server Performance Benchmark</h2>
+                <p>Multi-dimensional real-world speed test</p>
+            </div>
+
+            <!-- Running / Progress State -->
+            <div id="benchmarkRunningState" class="benchmark-running-state">
+                <div class="benchmark-spinner-container">
+                    <div class="benchmark-spinner"></div>
+                    <div class="benchmark-progress-bar-container">
+                        <div class="benchmark-progress-bar" id="benchmarkProgressBar" style="width: 0%;"></div>
+                        <span class="benchmark-progress-percent" id="benchmarkProgressPercent">0%</span>
+                    </div>
+                    <div class="benchmark-progress-text" id="benchmarkProgressText">Preparing benchmark...</div>
+                </div>
+                <button id="btnStopBenchmarkModal" class="btn-benchmark btn-stop" style="margin: 20px auto 0 auto; display: block; width: fit-content;">
+                    <span class="btn-text">Stop Benchmark</span>
+                </button>
+            </div>
+
+            <!-- Result State -->
+            <div id="benchmarkResultState" class="benchmark-result-state hidden">
+                <div class="overall-score-section">
+                    <div class="overall-score-circle">
+                        <span class="overall-score-num" id="modalOverallScore">0</span>
+                        <span class="overall-score-lbl">Overall Score</span>
+                    </div>
+                </div>
+
+                <div class="benchmark-grid">
+                    <!-- CPU Single Core -->
+                    <div class="benchmark-grid-card">
+                        <div class="bg-card-icon cpu-single-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="4" y="4" width="16" height="16" rx="2" />
+                                <path d="M9 9h6v6H9z" />
+                            </svg>
+                        </div>
+                        <div class="bg-card-details">
+                            <h4>CPU Single-Core</h4>
+                            <div class="bg-card-score" id="scoreCpuSingle">0 pts</div>
+                            <div class="bg-card-meta" id="metaCpuSingle">0 tasks/sec</div>
+                        </div>
+                    </div>
+
+                    <!-- CPU Multi Core -->
+                    <div class="benchmark-grid-card">
+                        <div class="bg-card-icon cpu-multi-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="2" y="2" width="20" height="20" rx="2" />
+                                <path d="M6 6h4v4H6zM14 6h4v4h-4zM6 14h4v4H6zM14 14h4v4h-4z" />
+                            </svg>
+                        </div>
+                        <div class="bg-card-details">
+                            <h4 id="labelCpuMulti">CPU Multi-Core</h4>
+                            <div class="bg-card-score" id="scoreCpuMulti">0 pts</div>
+                            <div class="bg-card-meta" id="metaCpuMulti">0 tasks/sec</div>
+                        </div>
+                    </div>
+
+                    <!-- RAM Speed -->
+                    <div class="benchmark-grid-card">
+                        <div class="bg-card-icon ram-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="2" y="6" width="20" height="12" rx="2" />
+                                <line x1="6" y1="10" x2="6" y2="14" />
+                                <line x1="12" y1="10" x2="12" y2="14" />
+                                <line x1="18" y1="10" x2="18" y2="14" />
+                            </svg>
+                        </div>
+                        <div class="bg-card-details">
+                            <h4>Memory (RAM)</h4>
+                            <div class="bg-card-score" id="scoreRam">0 pts</div>
+                            <div class="bg-card-meta" id="metaRam">0.0 GB/s Read-Write</div>
+                        </div>
+                    </div>
+
+                    <!-- Disk Speed -->
+                    <div class="benchmark-grid-card">
+                        <div class="bg-card-icon disk-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12s4.48 10 10 10 10-4.48 10-10z" />
+                                <path d="M12 6v6l4 2" />
+                            </svg>
+                        </div>
+                        <div class="bg-card-details">
+                            <h4>Disk I/O Speed</h4>
+                            <div class="bg-card-score" id="scoreDisk">0 pts</div>
+                            <div class="bg-card-meta" id="metaDisk">Write: 0 MB/s | Read: 0 MB/s</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Database & Web Server Metrics Modal -->
+    <div id="dbWebMetricsModal" class="login-overlay hidden">
+        <div class="login-box settings-box" style="max-width: 750px;">
+            <div class="settings-header">
+                <h2>🗄️ Database & Web Server Metrics</h2>
+                <button class="settings-close" id="btnCloseDbWebMetrics">&times;</button>
+            </div>
+            <div class="v2ray-content" style="padding: 15px 0;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 15px;">
+                    <!-- PostgreSQL Card -->
+                    <div class="v2ray-stat-card" style="padding: 15px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border-color);">
+                        <h3 style="margin-bottom: 10px; color: #10b981; display: flex; align-items: center; gap: 8px;">
+                            <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse> PostgreSQL Database
+                            <span id="pgStatusBadge" class="v2ray-status-badge" style="margin-left: auto;">Offline</span>
+                        </h3>
+                        <div style="font-size: 0.9rem; display: flex; flex-direction: column; gap: 8px;">
+                            <div>Active Connections: <strong id="pgActiveConn">0</strong> / <span id="pgMaxConn">100</span></div>
+                            <div>Idle Connections: <strong id="pgIdleConn">0</strong></div>
+                            <div>Cache Hit Ratio: <strong id="pgCacheHit">0%</strong></div>
+                        </div>
+                    </div>
+                    <!-- Nginx / HAProxy Card -->
+                    <div class="v2ray-stat-card" style="padding: 15px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border-color);">
+                        <h3 style="margin-bottom: 10px; color: #38bdf8; display: flex; align-items: center; gap: 8px;">
+                            🌐 Web Server (Nginx / HAProxy)
+                            <span id="nginxStatusBadge" class="v2ray-status-badge" style="margin-left: auto;">Offline</span>
+                        </h3>
+                        <div style="font-size: 0.9rem; display: flex; flex-direction: column; gap: 8px;">
+                            <div>Active Connections: <strong id="nginxActiveConn">0</strong></div>
+                            <div>State: Reading <strong id="nginxReading">0</strong> | Writing <strong id="nginxWriting">0</strong> | Waiting <strong id="nginxWaiting">0</strong></div>
+                            <div>502/504 Errors (Recent): <strong id="nginxErrors" style="color: #ef4444;">0</strong></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Diagnostics & Geo-IP Map Modal -->
+    <div id="diagnosticsModal" class="login-overlay hidden">
+        <div class="login-box settings-box" style="max-width: 850px;">
+            <div class="settings-header">
+                <h2>📡 Network Diagnostics & Geo-IP Traffic Map</h2>
+                <button class="settings-close" id="btnCloseDiagnostics">&times;</button>
+            </div>
+            <div class="v2ray-content" style="padding: 15px 0;">
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <input type="text" id="diagTargetInput" class="login-input" placeholder="Enter IP or Domain (e.g. 8.8.8.8, google.com)" style="flex: 1;">
+                    <button class="benchmark-btn" id="btnRunPing" style="padding: 8px 16px;">Ping</button>
+                    <button class="benchmark-btn" id="btnRunMtr" style="padding: 8px 16px; background: linear-gradient(135deg, #0284c7 0%, #38bdf8 100%);">Run MTR</button>
+                    <button class="benchmark-btn" id="btnRunVisualTrace" style="padding: 8px 16px; background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);">Visual Traceroute</button>
+                </div>
+                <!-- Diag Output -->
+                <div id="diagResultsContainer" style="background: rgba(0,0,0,0.4); padding: 12px; border-radius: 8px; font-family: monospace; font-size: 0.85rem; max-height: 250px; overflow-y: auto; white-space: pre-wrap; margin-bottom: 15px; display: none;"></div>
+                <!-- Map Container -->
+                <div id="geoMap" style="height: 300px; width: 100%; border-radius: 12px; border: 1px solid var(--border-color); background: #0f172a;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Security & Live Log Viewer Modal -->
+    <div id="securityLogsModal" class="login-overlay hidden">
+        <div class="login-box settings-box" style="max-width: 850px;">
+            <div class="settings-header">
+                <h2>🛡️ Security, Fail2ban & Live Logs</h2>
+                <button class="settings-close" id="btnCloseSecurityLogs">&times;</button>
+            </div>
+            <div class="v2ray-content" style="padding: 15px 0;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                    <!-- Fail2ban -->
+                    <div style="padding: 12px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-color);">
+                        <h3 style="font-size: 0.95rem; margin-bottom: 8px; color: #f59e0b;">Fail2ban Jails & Banned IPs</h3>
+                        <div id="fail2banList" style="font-size: 0.85rem; max-height: 120px; overflow-y: auto;">Loading status...</div>
+                    </div>
+                    <!-- SSH Sessions -->
+                    <div style="padding: 12px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-color);">
+                        <h3 style="font-size: 0.95rem; margin-bottom: 8px; color: #10b981;">Active SSH Sessions</h3>
+                        <div id="sshSessionsList" style="font-size: 0.85rem; max-height: 120px; overflow-y: auto;">Loading sessions...</div>
+                    </div>
+                </div>
+                <!-- Live Log Viewer -->
+                <div style="padding: 12px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-color);">
+                    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+                        <h3 style="font-size: 0.95rem; color: var(--text-primary);">📜 Live Log Viewer</h3>
+                        <select id="logSourceSelect" class="iface-select" style="height: 28px; padding: 0 8px; border-radius: 6px; font-size: 0.85rem;">
+                            <option value="syslog">Syslog</option>
+                            <option value="nginx_access">Nginx Access</option>
+                            <option value="nginx_error">Nginx Error</option>
+                            <option value="xray">Xray Log</option>
+                            <option value="postgresql">Postgres Log</option>
+                        </select>
+                        <input type="text" id="logSearchInput" class="login-input" placeholder="Live filter text..." style="height: 28px; padding: 0 8px; font-size: 0.85rem; flex: 1;">
+                        <button id="btnFetchLogs" class="benchmark-btn" style="padding: 4px 12px; font-size: 0.8rem;">Refresh Log</button>
+                    </div>
+                    <div id="logContentBox" style="background: #000; color: #00ff00; font-family: monospace; font-size: 0.8rem; padding: 10px; border-radius: 8px; height: 220px; overflow-y: auto; white-space: pre-wrap;">Select a log source and click Refresh...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Docker Manager Modal -->
+    <div id="dockerModal" class="login-overlay hidden">
+        <div class="login-box settings-box" style="max-width: 800px;">
+            <div class="settings-header">
+                <h2>🐳 Docker Container Manager</h2>
+                <button class="settings-close" id="btnCloseDocker">&times;</button>
+            </div>
+            <div class="v2ray-content" style="padding: 15px 0;">
+                <div id="dockerContainersContainer" style="display: flex; flex-direction: column; gap: 10px; max-height: 400px; overflow-y: auto;">
+                    Loading containers...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Update Overlay -->
+    <div id="updateOverlay" class="login-overlay hidden">
+        <div class="login-box settings-box" style="text-align: center; max-width: 450px;">
+            <div class="login-header">
+                <h2>Panel Updating</h2>
+                <p id="updateStatusText">Starting detached upgrade process...</p>
+            </div>
+            <div class="benchmark-spinner-container" style="margin: 20px 0;">
+                <div class="benchmark-spinner"></div>
+            </div>
+            <div class="benchmark-progress-bar-container" style="margin: 20px auto;">
+                <div class="benchmark-progress-bar" id="updateProgressBar" style="width: 0%;"></div>
+                <span class="benchmark-progress-percent" id="updateProgressPercent">0%</span>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">
+                The panel service is restarting in the background. The page will reload automatically as soon as it is back online.
+            </p>
+        </div>
+    </div>
+
+    <!-- Web SSH Terminal Overlay -->
+    <div id="sshTerminalOverlay" class="login-overlay hidden" style="z-index: 99999;">
+        <div class="login-box" id="sshTerminalModalBox" style="width: 95%; max-width: 1200px; height: 88vh; max-height: 850px; display: flex; flex-direction: column; padding: 18px; background: #0f172a; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); transition: all 0.2s ease;">
+            <!-- Modal Header -->
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                        <polyline points="9 9 11 12 9 15"></polyline>
+                        <line x1="13" y1="15" x2="17" y2="15"></line>
+                    </svg>
+                    <h3 id="sshTerminalTitle" style="margin:0; font-size: 1.05rem; color: #f8fafc; font-weight: 600; white-space: nowrap;">Web SSH Terminal</h3>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <button id="btnSshFullscreen" title="Toggle Fullscreen" style="background: #1e293b; border: 1px solid #334155; color: #94a3b8; cursor: pointer; font-size: 1rem; padding: 4px 8px; border-radius: 6px; line-height: 1; transition: color 0.2s;" onmouseover="this.style.color='#f8fafc'" onmouseout="this.style.color='#94a3b8'">⛶</button>
+                    <button id="closeSshTerminal" class="btn-close-overlay" style="position: relative; top: 0; right: 0; padding: 0 8px; height: 30px; width: 30px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">×</button>
+                </div>
+            </div>
+
+            <!-- Quick Sessions Rectangle Cards Section -->
+            <div id="sshQuickBar" style="margin-bottom: 10px; background: rgba(15, 23, 42, 0.7); padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                    <span style="font-size: 0.76rem; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.6px; display: flex; align-items: center; gap: 5px;">
+                        <span style="color: #10b981;">📌</span> Saved Server Sessions
+                    </span>
+                    <span id="sshSessionCount" style="font-size: 0.72rem; color: #64748b; font-weight: 500;">0 sessions</span>
+                </div>
+                <div id="sshQuickCardsContainer" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin;">
+                    <!-- Session rectangle cards rendered here -->
+                </div>
+            </div>
+
+            <!-- Inputs & Connection Row -->
+            <div id="sshTerminalControls" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; padding: 8px 10px; background: #1e293b; border-radius: 8px; border: 1px solid #334155;">
+                <input type="text" id="sshTitle" placeholder="Title (e.g. OVH Germany)" style="width: 135px; padding: 5px 8px; font-size: 0.82rem; background: #0f172a; border: 1px solid #334155; color: #f8fafc; border-radius: 6px;" title="Session Title">
+                <input type="text" id="sshHost" placeholder="Host / IP" value="127.0.0.1" style="width: 110px; padding: 5px 6px; font-size: 0.82rem; background: #0f172a; border: 1px solid #334155; color: #f8fafc; border-radius: 6px;">
+                <input type="number" id="sshPort" placeholder="Port" value="22" style="width: 70px; padding: 5px 6px; font-size: 0.82rem; background: #0f172a; border: 1px solid #334155; color: #f8fafc; border-radius: 6px;">
+                <input type="text" id="sshUser" placeholder="User" value="root" style="width: 65px; padding: 5px 6px; font-size: 0.82rem; background: #0f172a; border: 1px solid #334155; color: #f8fafc; border-radius: 6px;">
+                <input type="password" id="sshPass" placeholder="Password" style="width: 90px; padding: 5px 6px; font-size: 0.82rem; background: #0f172a; border: 1px solid #334155; color: #f8fafc; border-radius: 6px;">
+                <button id="btnSaveSshSession" title="Save bookmark to server database" style="padding: 5px 10px; font-size: 0.82rem; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">+ Save</button>
+                <button id="btnDeleteSshSession" title="Delete selected bookmark" style="padding: 5px 8px; font-size: 0.82rem; background: #64748b; color: white; border: none; border-radius: 6px; cursor: pointer; display: none;">🗑️</button>
+                <button id="btnSshConnect" style="padding: 5px 14px; font-size: 0.82rem; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; margin-left: auto;">Connect</button>
+                <button id="btnSshDisconnect" style="padding: 5px 14px; font-size: 0.82rem; background: #ef4444; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; display: none; margin-left: auto;">Disconnect</button>
+            </div>
+
+            <!-- Terminal Box -->
+            <div id="sshTerminalBox" style="flex: 1; background: #000000; border-radius: 6px; padding: 8px; overflow: hidden; position: relative;"></div>
+        </div>
+    </div>
+
+    <script src="/static/chart.umd.min.js"></script>
+    <script src="/static/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="/static/leaflet.js"></script>
+    <script src="/static/xterm/xterm.js"></script>
+    <script src="/static/xterm/addon-fit.js"></script>
+    <script src="/static/app.js?v=33"></script>
+</body>
+</html>
